@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+env/
+
+# System Files
+.DS_Store
+Thumbs.db
+*.log
+
+# Infrastructure & Data
+localstack/
+postgres_data/
+chroma_data/
+model_cache/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.bak

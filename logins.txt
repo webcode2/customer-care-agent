@@ -1,0 +1,13 @@
+# Platform Login Credentials (Password: password123)
+
+## Acme Corp (Organization 1)
+- Admin: admin@acme.com
+- Assistant: assistant@acme.com
+
+## Stark Industries (Organization 2)
+- Admin: admin@stark.com
+- Assistant: assistant@stark.com
+
+---
+URL: http://localhost:5173
+Adminer (DB): http://localhost:8080 (user/pass)

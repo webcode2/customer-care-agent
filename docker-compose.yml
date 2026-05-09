@@ -1,0 +1,183 @@
+services:
+  agent-api:
+    build:
+      context: ./backend/services/agent
+    container_name: agent-api
+    depends_on:
+      - chromadb
+      - localstack
+      - nats
+      - redis
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-supersecret}
+      - NATS_URL=nats://nats:4222
+      - REDIS_URL=redis://redis:6379
+      - CACHE_SIMILARITY_THRESHOLD=0.15
+      - CACHE_TTL_SECONDS=86400
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-test}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-test}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - S3_ENDPOINT_URL=http://localstack:4566
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    volumes:
+      - ./backend/services/agent:/app
+      - model_cache:/root/.cache/chroma
+    ports:
+      - "8000:8000"
+    networks:
+      - customer-care-network
+    # CMD default: python main.py (FastAPI HTTP gateway — scales for ingress)
+
+  agent-worker:
+    build:
+      context: ./backend/services/agent
+    # No container_name — allows multiple replicas:
+    #   docker compose up --scale agent-worker=3
+    depends_on:
+      - chromadb
+      - localstack
+      - nats
+      - redis
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - NATS_URL=nats://nats:4222
+      - REDIS_URL=redis://redis:6379
+      - CACHE_SIMILARITY_THRESHOLD=0.15
+      - CACHE_TTL_SECONDS=86400
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-test}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-test}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - S3_ENDPOINT_URL=http://localstack:4566
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    volumes:
+      - ./backend/services/agent:/app
+      - model_cache:/root/.cache/chroma
+    command: python worker.py   # override: LangGraph worker — scale this freely
+    networks:
+      - customer-care-network
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+
+  iam-service:
+    build:
+      context: ./backend/services/iam
+    container_name: iam-service
+    environment:
+      - DATABASE_URL=postgresql://user:pass@postgres:5432/iam_db
+      - JWT_SECRET=${JWT_SECRET:-supersecret}
+      - NATS_URL=nats://nats:4222
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-test}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-test}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - S3_ENDPOINT_URL=http://localstack:4566
+    volumes:
+      - ./backend/services/iam:/app
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres
+      - nats
+    networks:
+      - customer-care-network
+
+  nats:
+    image: nats:latest
+    container_name: nats
+    ports:
+      - "4222:4222"
+      - "8222:8222" # Monitor
+    healthcheck:
+      test: ["CMD", "nats-server", "-v"] # Simple check
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - customer-care-network
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - customer-care-network
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=iam_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d iam_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - customer-care-network
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - customer-care-network
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chromadb
+    ports:
+      - "8010:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - customer-care-network
+
+  dashboard:
+    build:
+      context: ./clients/dashboard
+    container_name: dashboard
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./clients/dashboard:/app
+      - /app/node_modules
+    networks:
+      - customer-care-network
+
+  localstack:
+    image: localstack/localstack:2.3.2
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEBUG=1
+    volumes:
+      - "./localstack:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - customer-care-network
+
+networks:
+  customer-care-network:
+    driver: bridge
+
+volumes:
+  chroma_data:
+  postgres_data:
+  model_cache:

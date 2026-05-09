@@ -9,6 +9,23 @@ SkyCare AI is a high-performance, multi-tenant customer service platform powered
 - **Real-time Synchronization**: SSE-based document processing updates and NATS-driven event bus.
 - **Scalable Workflows**: LangGraph-powered AI reasoning with asynchronous worker scaling.
 
+## 📸 Screenshots
+
+### 🏠 Landing Page
+![Landing Page](./screenshots/Screenshot%20from%202026-05-09%2021-11-48.png)
+
+### 🔐 Secure Login
+![Login Page](./screenshots/Screenshot%20from%202026-05-09%2021-12-20.png)
+
+### 🧠 Knowledge Base
+![Knowledge Base](./screenshots/Screenshot%20from%202026-05-09%2021-13-32.png)
+
+### 💬 Agent Terminal
+![Agent Terminal](./screenshots/Screenshot%20from%202026-05-09%2021-17-29.png)
+
+### ⚙️ System Settings
+![Settings Page](./screenshots/Screenshot%20from%202026-05-09%2021-17-47.png)
+
 ## 🏗️ Tech Stack
 - **Frontend**: React, Vite, Tailwind CSS, React Router.
 - **Backend**: FastAPI, LangGraph, NATS, Redis.

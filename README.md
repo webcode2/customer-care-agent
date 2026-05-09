@@ -44,8 +44,8 @@ SkyCare AI is a high-performance, multi-tenant customer service platform powered
    - API Gateway: `http://localhost:8000`
 
 ## 🔒 Security
-- **Multi-Tenant Isolation**: "ResidentPass" constraints ensure strict data isolation between organizational units.
+- **Multi-Tenant Isolation**: "Tenant constraints" ensure strict data isolation between organizational units.
 - **E2E Encryption**: Encrypted data flow between the dashboard and the secure agent terminal.
 
 ---
-Built with 🖤 by SkyCare Engineering.
+Built with ❤️ by Savior Israel.

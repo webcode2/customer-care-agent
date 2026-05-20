@@ -50,6 +50,7 @@ const App = () => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState([]);
@@ -120,7 +121,7 @@ const App = () => {
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setIsLoading(true);
+    setIsUploading(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -130,20 +131,10 @@ const App = () => {
         body: formData
       });
       fetchDocs();
-      alert('File uploaded successfully!');
-    } catch (err) { alert('Upload failed'); } finally { setIsLoading(false); }
+    } catch (err) { alert('Upload failed'); } finally { setIsUploading(false); }
   };
 
-  const handleSync = async () => {
-    setIsLoading(true);
-    try {
-      await fetch(`${AGENT_URL}/sync`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      alert('Sync started!');
-    } catch (err) { alert('Sync failed'); } finally { setIsLoading(false); }
-  };
+
 
   const handleDeleteOne = async (key) => {
     if (!window.confirm(`Delete ${key.split('/').pop()}?`)) return;
@@ -222,7 +213,7 @@ const App = () => {
       
       <Route path="/dashboard/knowledge" element={
         token ? <DashboardLayout {...layoutProps}>
-          <Knowledge docs={docs} handleFileUpload={handleFileUpload} handleSync={handleSync} handleDeleteOne={handleDeleteOne} handleDeleteAll={handleDeleteAll} />
+          <Knowledge docs={docs} handleFileUpload={handleFileUpload} handleDeleteOne={handleDeleteOne} handleDeleteAll={handleDeleteAll} isUploading={isUploading} />
         </DashboardLayout> : <Navigate to="/login" />
       } />
       

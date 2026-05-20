@@ -31,15 +31,20 @@ async def verify_jwt(request: Request):
         # Rationale: Decoding the JWT verifies that the user is who they say they are.
         # We extract 'sub' (user_id) and 'org_id' to bind the request to a specific tenant.
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("sub")
-        org_id: int = payload.get("org_id")
+        user_id = payload.get("sub")
+        org_id = payload.get("org_id")
         
         # Rationale: If the payload is missing these keys, the token is malformed 
         # and cannot be used for multi-tenant filtering.
-        if user_id is None or org_id is None:
+        if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token payload",
+                detail="Invalid token: Missing user identity (sub)",
+            )
+        if org_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: Missing organization context (org_id). Please ensure you have created an organization.",
             )
         
         # Rationale: Injecting these into request.state makes them available 
@@ -47,10 +52,14 @@ async def verify_jwt(request: Request):
         request.state.user_id = user_id
         request.state.org_id = org_id
         
-    except Exception as e:
-        # Rationale: Any failure in decoding (expired token, wrong secret) 
-        # must result in a 401 to protect tenant data.
+    except jwt.JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+            detail="Could not validate credentials: Invalid or expired token",
+        )
+    except Exception as e:
+        # Rationale: Catch-all for any other unexpected failures.
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Authentication error: {str(e)}",
         )

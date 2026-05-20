@@ -74,7 +74,11 @@ def seed():
                 db.add(user)
                 print(f"Created User: {u['email']}")
             else:
-                print(f"User {u['email']} already exists")
+                # Rationale: If the user exists but the link to the organization is missing,
+                # we must repair it to ensure the multi-tenant JWTs work correctly.
+                existing_user.organization_id = u["org_id"]
+                existing_user.role = u["role"]
+                print(f"Updated existing User: {u['email']} (linked to Org ID: {u['org_id']})")
         
         db.commit()
         

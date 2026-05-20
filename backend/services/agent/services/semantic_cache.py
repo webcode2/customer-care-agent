@@ -92,8 +92,12 @@ class SemanticCache:
                 query_texts=[query],
                 n_results=1,
                 where={
-                    "org_id": str(org_id),
-                    "max_tokens": max_tokens,
+                    # Rationale: ChromaDB requires the $and operator when filtering
+                    # on more than one metadata field simultaneously.
+                    "$and": [
+                        {"org_id": {"$eq": str(org_id)}},
+                        {"max_tokens": {"$eq": max_tokens}},
+                    ]
                 },
                 include=["distances", "metadatas"],
             )

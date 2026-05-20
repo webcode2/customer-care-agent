@@ -6,7 +6,8 @@ const Knowledge = ({
   handleFileUpload, 
   handleSync, 
   handleDeleteOne, 
-  handleDeleteAll 
+  handleDeleteAll,
+  isUploading
 }) => {
   return (
     <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full gap-6 animate-slide-up">
@@ -16,29 +17,22 @@ const Knowledge = ({
             <h3 className="font-bold text-lg mb-2 text-slate-900 dark:text-white">Upload New Context</h3>
             <p className="text-slate-800 dark:text-slate-300 text-sm leading-relaxed mb-6 font-medium">Drop your PDFs, Word documents, or spreadsheets here to embed them into your agent's knowledge brain.</p>
             <div className="relative">
-              <input type="file" onChange={handleFileUpload} className="hidden" id="file-upload" accept=".pdf,.docx,.xlsx,.xls,.csv,.epub,.txt,.md" />
-              <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-3xl hover:border-black dark:hover:border-white cursor-pointer transition-all group bg-white dark:bg-black hover:bg-slate-50 dark:hover:bg-slate-900">
-                <div className="w-16 h-16 bg-white dark:bg-black border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex items-center justify-center mb-4 group-hover:-translate-y-2 group-hover:scale-110 transition-transform duration-300">
-                  <Icons.Upload />
+              <input type="file" onChange={handleFileUpload} className="hidden" id="file-upload" accept=".pdf,.docx,.xlsx,.xls,.csv,.epub,.txt,.md" disabled={isUploading} />
+              <label htmlFor="file-upload" className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-3xl transition-all group bg-white dark:bg-black ${isUploading ? 'border-blue-500 opacity-70 cursor-not-allowed' : 'border-slate-300 dark:border-slate-700 hover:border-black dark:hover:border-white cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900'}`}>
+                <div className={`w-16 h-16 bg-white dark:bg-black border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex items-center justify-center mb-4 transition-all duration-300 ${isUploading ? 'animate-pulse' : 'group-hover:-translate-y-2 group-hover:scale-110'}`}>
+                  {isUploading ? (
+                    <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-500 rounded-full animate-spin"></div>
+                  ) : (
+                    <Icons.Upload />
+                  )}
                 </div>
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-black dark:group-hover:text-white transition-colors">Select a file</span>
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-black dark:group-hover:text-white transition-colors">{isUploading ? 'Uploading...' : 'Select a file'}</span>
                 <span className="text-xs text-slate-400 mt-1">PDF, DOCX, XLSX, TXT up to 50MB</span>
               </label>
             </div>
           </div>
 
-          <div className="dashboard-card bg-black dark:bg-white p-6 text-white dark:text-black overflow-hidden relative border-none">
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="p-2 bg-white/20 dark:bg-black/10 rounded-lg backdrop-blur-md"><Icons.Zap /></span>
-                <h3 className="font-bold text-lg">Sync Status</h3>
-              </div>
-              <p className="text-slate-800 dark:text-slate-400 text-sm leading-relaxed mb-6 font-medium">After uploading new files, retrain your agent to vectorize the text.</p>
-              <button onClick={handleSync} className="w-full bg-white dark:bg-black text-black dark:text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-900 hover:shadow-lg transition-all active:scale-95 shadow-md">Retrain Agent</button>
-            </div>
-            <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 dark:bg-black/5 blur-2xl rounded-full"></div>
-            <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-white/5 dark:bg-black/5 blur-2xl rounded-full"></div>
-          </div>
+
         </div>
 
         <div className="lg:col-span-2 dashboard-card flex flex-col overflow-hidden bg-white dark:bg-black">

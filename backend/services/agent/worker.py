@@ -54,7 +54,12 @@ async def handle_job(msg):
 
         # Store result in the distributed semantic cache so future similar
         # queries are served instantly at the API layer.
-        semantic_cache.store(query, org_id, max_tokens, answer)
+        try:
+            semantic_cache.store(query, org_id, max_tokens, answer)
+        except Exception as cache_exc:
+            # Rationale: Cache storage is best-effort. A transient connection
+            # error (e.g. DNS flap after restart) must never discard the answer.
+            print(f"[WORKER] WARNING: Cache store failed (non-fatal): {cache_exc}")
 
         # Publish the answer back to the API pod that is waiting on msg.reply.
         await nats_client.nc.publish(

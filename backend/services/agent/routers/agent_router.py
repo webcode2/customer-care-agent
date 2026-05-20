@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Request, UploadFile, File, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from middleware.auth_middleware import verify_jwt
 from controllers.agent_controller import AgentController
@@ -33,23 +33,30 @@ async def list_docs(request: Request):
     return {"documents": keys}
 
 @router.post("/docs/upload", dependencies=[Depends(verify_jwt)])
-async def upload_doc(request: Request, file: UploadFile = File(...)):
+async def upload_doc(request: Request, background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     """
     Receives a file as multipart/form-data (raw binary bytes).
     Rationale: Using UploadFile instead of a JSON string body ensures that
     binary files (PDFs, images) are stored byte-for-byte without text encoding corruption.
     """
-    org_id = request.state.org_id
+    org_id = str(request.state.org_id)
     content = await file.read()
-    key = s3_manager.upload_doc_bytes(str(org_id), file.filename, content)
+    key = s3_manager.upload_doc_bytes(org_id, file.filename, content)
     
-    await nats_client.publish(f"tenant.{org_id}.upload", {
-        "event": "upload_finished",
-        "filename": file.filename,
-        "key": key
-    })
+    async def process_and_notify():
+        # Auto-sync right after upload
+        await sync_service.sync_tenant_docs(org_id)
+        
+        # Publish upload_finished AFTER sync so frontend spinner stays active until retrained
+        await nats_client.publish(f"tenant.{org_id}.upload", {
+            "event": "upload_finished",
+            "filename": file.filename,
+            "key": key
+        })
+        
+    background_tasks.add_task(process_and_notify)
     
-    return {"message": "Document uploaded", "key": key}
+    return {"message": "Document uploaded and sync started", "key": key}
 
 @router.get("/docs/events", dependencies=[Depends(verify_jwt)])
 async def docs_events(request: Request):

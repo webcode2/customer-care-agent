@@ -23,6 +23,22 @@ class AuthController:
     @staticmethod
     def register(db: Session, user_data: UserCreate):
         hashed_password = AuthService.get_password_hash(user_data.password)
+        
+        # If no organization_id is provided, create a default workspace for the user
+        if not user_data.organization_id:
+            from models.models import Organization
+            # Create a unique slug from email handle and a random component to prevent collisions
+            import uuid
+            slug = f"{user_data.email.split('@')[0]}-{str(uuid.uuid4())[:8]}"
+            new_org = Organization(
+                name=f"{user_data.email.split('@')[0].capitalize()}'s Workspace",
+                slug=slug,
+                config={}
+            )
+            db.add(new_org)
+            db.flush() # Flush to get the new_org.id
+            user_data.organization_id = new_org.id
+
         db_user = User(
             email=user_data.email,
             hashed_password=hashed_password,
@@ -30,6 +46,16 @@ class AuthController:
         )
         db.add(db_user)
         db.commit()
+        db.refresh(db_user)
+        
+        # Set the user as the owner of their new organization
+        if not user_data.organization_id is None: # Actually it's guaranteed to be set now
+            org = db.query(Organization).filter(Organization.id == user_data.organization_id).first()
+            if org and not org.owner_id:
+                org.owner_id = db_user.id
+                db.commit()
+                
+        return db_user
     @staticmethod
     def reset_password(db: Session, email: str):
         # In a real app, this would send an email with a token

@@ -42,20 +42,23 @@ async def handle_job(msg):
         user_id = payload["user_id"]
         query = payload["query"]
         max_tokens = int(payload.get("max_tokens", 500))
+        history = payload.get("history", [])
 
-        print(f"[WORKER] Processing job — org={org_id} query='{query[:60]}...'")
+        print(f"[WORKER] Processing job — org={org_id} query='{query[:60]}...' history_len={len(history)}")
 
         answer = await agent_service.run(
             org_id=org_id,
             user_id=user_id,
             query=query,
             max_tokens=max_tokens,
+            history=history,
         )
 
         # Store result in the distributed semantic cache so future similar
         # queries are served instantly at the API layer.
         try:
-            semantic_cache.store(query, org_id, max_tokens, answer)
+            if not history:
+                semantic_cache.store(query, org_id, max_tokens, answer)
         except Exception as cache_exc:
             # Rationale: Cache storage is best-effort. A transient connection
             # error (e.g. DNS flap after restart) must never discard the answer.

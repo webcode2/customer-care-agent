@@ -23,11 +23,16 @@ def internal_retrieve_knowledge(query: str, org_id: str) -> str:
     ).strip()
     print(f"\n[RAG] Searching KB for: '{clean_query}' (Org: {org_id})")
     results = vector_store.query(query_texts=[clean_query], tenant_id=str(org_id))
-    content = (
-        "\n".join(results["documents"][0])
-        if results["documents"] and results["documents"][0]
-        else "No information found."
-    )
+    if results["documents"] and results["documents"][0]:
+        formatted_chunks = []
+        for i, doc_text in enumerate(results["documents"][0]):
+            # metadatas is also a list of lists, matching documents
+            meta = results["metadatas"][0][i] if results.get("metadatas") else {}
+            source = meta.get("source", "Unknown Source").split('/')[-1] # Get just the filename
+            formatted_chunks.append(f"--- SOURCE: {source} ---\n{doc_text}\n")
+        content = "\n".join(formatted_chunks)
+    else:
+        content = "No information found."
     print(f"[RAG] Retrieved {len(content)} characters of context.")
     return content
 
@@ -150,15 +155,27 @@ class AgentService:
         return {"messages": [response], "turns": current_turns + 1}
 
 
-    async def run(self, org_id: str, user_id: str, query: str, max_tokens: int = 500) -> str:
+    async def run(self, org_id: str, user_id: str, query: str, max_tokens: int = 500, history: list = None) -> str:
         """
         Runs the LangGraph workflow and returns the final AI response string.
         No cache logic here — callers own cache lookup/storage.
         """
+        if history is None:
+            history = []
+            
+        messages = []
+        for msg in history:
+            if msg.get("role") == "user":
+                messages.append(HumanMessage(content=msg.get("content", "")))
+            elif msg.get("role") == "agent":
+                messages.append(AIMessage(content=msg.get("content", "")))
+        
+        messages.append(HumanMessage(content=query))
+
         initial_state = {
             "org_id": org_id,
             "user_id": user_id,
-            "messages": [HumanMessage(content=query)],
+            "messages": messages,
             "turns": 0,
             "max_tokens": max_tokens,
         }

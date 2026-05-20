@@ -3,11 +3,13 @@
 SkyCare AI is a high-performance, multi-tenant customer service platform powered by a distributed microservices architecture and RAG (Retrieval-Augmented Generation) technology.
 
 ## 🚀 Key Features
-- **Autonomous RAG Agent**: Advanced document embedding and semantic search across PDF, DOCX, XLSX, and more.
+- **Conversational Memory**: Full multi-turn context awareness with LangGraph and semantic cache bypassing for follow-up questions.
+- **Automated RAG Pipeline**: Background synchronization of document uploads directly into the ChromaDB vector index via FastAPI BackgroundTasks.
+- **Source Citations**: RAG chunks are injected with source metadata, allowing the agent to explicitly cite reference documents.
 - **Microservices Architecture**: Independent scaling for AI Processing (Agent), IAM (Identity & Access Management), and Database layers.
 - **Premium Monochrome UI**: A high-contrast, professional dashboard built with React, Vite, and Tailwind CSS.
-- **Real-time Synchronization**: SSE-based document processing updates and NATS-driven event bus.
-- **Scalable Workflows**: LangGraph-powered AI reasoning with asynchronous worker scaling.
+- **Scalable Workflows**: LangGraph-powered AI reasoning with asynchronous worker scaling and NATS-driven event bus.
+- **Hardened Agent Persona**: Detailed, tier-based escalation protocols and strict adherence to internal knowledge limits.
 
 ## 📸 Screenshots
 

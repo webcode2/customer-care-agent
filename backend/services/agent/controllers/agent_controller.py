@@ -9,35 +9,27 @@ _WORKER_TIMEOUT = float(30)  # seconds
 
 class AgentController:
     @staticmethod
-    async def chat(request: Request, query: str, max_tokens: int = 500):
+    async def chat(request: Request, query: str, max_tokens: int = 500, history: list = None):
         """
         Handles a chat request from the API layer.
-
-        Flow:
-          1. Semantic cache lookup — if a semantically similar question was
-             previously answered for this tenant, return instantly (0 tokens).
-          2. Cache MISS — publish a job to the NATS worker pool and await the
-             reply with a 30-second timeout.
-          3. On timeout or worker failure, return 504 so the client knows to
-             retry rather than hanging indefinitely.
-
-        Rationale: The controller owns the cache decision and the NATS
-        transport.  The AgentService (worker-side) is a pure LangGraph
-        executor with no knowledge of HTTP or caching, making it trivially
-        scalable and testable in isolation.
         """
+        if history is None:
+            history = []
+            
         org_id = str(request.state.org_id)
         user_id = str(request.state.user_id)
 
         # --- Step 1: Semantic Cache Pre-flight ---
-        cached_answer = semantic_cache.lookup(query, org_id, max_tokens)
-        if cached_answer is not None:
-            return {
-                "response": cached_answer,
-                "org_id": org_id,
-                "user_id": user_id,
-                "cache": "HIT",
-            }
+        # Bypass cache if it's a multi-turn conversation, as the answer depends on context.
+        if not history:
+            cached_answer = semantic_cache.lookup(query, org_id, max_tokens)
+            if cached_answer is not None:
+                return {
+                    "response": cached_answer,
+                    "org_id": org_id,
+                    "user_id": user_id,
+                    "cache": "HIT",
+                }
 
         # --- Step 2: Dispatch to Worker Pool via NATS ---
         job_payload = {
@@ -45,6 +37,7 @@ class AgentController:
             "user_id": user_id,
             "query": query,
             "max_tokens": max_tokens,
+            "history": history,
         }
 
         try:

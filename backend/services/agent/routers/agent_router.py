@@ -15,10 +15,11 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     query: str
     max_tokens: int = 500
+    history: list = []
 
 @router.post("/chat", dependencies=[Depends(verify_jwt)])
 async def chat(request: Request, chat_req: ChatRequest):
-    return await AgentController.chat(request, chat_req.query, chat_req.max_tokens)
+    return await AgentController.chat(request, chat_req.query, chat_req.max_tokens, chat_req.history)
 
 @router.post("/sync", dependencies=[Depends(verify_jwt)])
 async def sync_docs(request: Request):

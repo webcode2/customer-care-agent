@@ -174,7 +174,7 @@ const App = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ query: chatInput, max_tokens: maxTokens })
+        body: JSON.stringify({ query: chatInput, max_tokens: maxTokens, history: chatHistory })
       });
       const data = await response.json();
       setChatHistory(prev => [...prev, { role: 'agent', content: data.response }]);
